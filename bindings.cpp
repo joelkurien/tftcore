@@ -116,13 +116,13 @@ PYBIND11_MODULE(peped, m) {
         .def("__rmul__", [](Tensor& t, double v){return t*v; })
 
         .def("__truediv__", py::overload_cast<const Tensor&>(&Tensor::operator/))
-        .def("__truediv__", py::overload_cast<double>(&Tensor::operator-))
+        .def("__truediv__", py::overload_cast<double>(&Tensor::operator/))
         
         .def("__iadd__", py::overload_cast<const Tensor&>(&Tensor::operator+=))
-        .def("__iadd__", py::overload_cast<double>(&Tensor::operator+=))
+        .def("__iadd__", py::overload_cast<const double>(&Tensor::operator+=))
 
         .def("__isub__", py::overload_cast<const Tensor&>(&Tensor::operator-=))
-        .def("__isub__", py::overload_cast<double>(&Tensor::operator-=))
+        .def("__isub__", py::overload_cast<const double>(&Tensor::operator-=))
         .def("__eq__",   py::overload_cast<const Tensor&>(&Tensor::operator==))
         .def("__gt__",   py::overload_cast<const Tensor&>(&Tensor::operator>))
         .def("__lt__",   py::overload_cast<const Tensor&>(&Tensor::operator<))

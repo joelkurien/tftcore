@@ -484,6 +484,18 @@ Tensor Tensor::operator+= (const Tensor& t){
     return *this;
 }
 
+Tensor Tensor::operator+= (const double val){
+    size_t total_size = this->size();
+
+    #pragma omp parallel for simd schedule(static)
+    for(size_t i=0; i<size(); i++){
+        std::vector<size_t> idx = this->index(i);
+        this->basePtr[this->jumpTo(idx)] += val;
+    }
+    
+    return *this;
+}
+
 Tensor Tensor::operator-= (const Tensor& t){
     if(this->shape() != t.shape()) throw std::invalid_argument("Inplace subtraction matrix shapes incompatible");
 
@@ -493,6 +505,18 @@ Tensor Tensor::operator-= (const Tensor& t){
     for(size_t i=0; i<size(); i++){
         std::vector<size_t> idx = this->index(i);
         this->basePtr[this->jumpTo(idx)] -= t.at(idx);
+    }
+    
+    return *this;
+}
+
+Tensor Tensor::operator-= (const double val){
+    size_t total_size = this->size();
+
+    #pragma omp parallel for simd schedule(static)
+    for(size_t i=0; i<size(); i++){
+        std::vector<size_t> idx = this->index(i);
+        this->basePtr[this->jumpTo(idx)] -= val;
     }
     
     return *this;
