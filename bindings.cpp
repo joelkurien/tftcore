@@ -72,6 +72,7 @@ PYBIND11_MODULE(peped, m) {
         //Indexive viewing and insertion of values
         .def("at", &Tensor::at, py::arg("indices"))
         .def("put", &Tensor::put, py::arg("indices"), py::arg("val"))
+        .def("as_vector", [](Tensor& t){ return t.as_vector_const(); })
 
         //Viewing the data from a different perspective
         .def("to_contiguous", &Tensor::contiguous)
@@ -151,6 +152,20 @@ PYBIND11_MODULE(peped, m) {
         //initializers
         .def("xavier_ud", &Tensor::xavier_ud, py::arg("fan_in"), py::arg("fan_out"))
         .def("dropout", &Tensor::dropout, 
-                py::arg("p"), py::arg("training"), py::arg("mask"));
+                py::arg("p"), py::arg("training"), py::arg("mask"))
+
+        .def("__repr__", [](const Tensor& t){
+            return "Tensor(shape="+vec_string(t.shape()) + ")";
+        });
+    m.def("matmul", &MatrixMul::matmul, py::arg("a"), py::arg("b"));
+    m.def("concatenate", &concatenate, py::arg("tensors"), py::arg("axis"));
+    m.def("ones", &ones, py::arg("shape"));
+    m.def("dot", &dot, py::arg("x"), py::arg("y"), py::arg("axis"));
+    m.def("elemental_max",
+            py::overload_cast<const Tensor&, const Tensor&>(&elemental_max),
+            py::arg("a"), py::arg("b"));
+    m.def("replace",
+            py::overload_cast<const Tensor&, const Tensor&, const Tensor&>(&replace),
+            py::arg("mask"), py::arg("a"), py::arg("b"));
 }
 
