@@ -100,6 +100,57 @@ PYBIND11_MODULE(peped, m) {
         .def("broadcast_shape", [](Tensor& t, const Tensor& other){
             return t.broadcast_shape(other);
         }, py::arg("other"))
-        .def("mask_filled", &Tensor::mask_filled, py::arg("mask"), py::arg("replace"));
+        .def("mask_filled", &Tensor::mask_filled, py::arg("mask"), py::arg("replace"))
+
+        //arithematic operations
+        .def("__add__", py::overload_cast<const Tensor&>(&Tensor::operator+))
+        .def("__add__", py::overload_cast<double>(&Tensor::operator+))
+        .def("__radd__", [](Tensor& t, double v){return t+v; })
+
+        .def("__sub__", py::overload_cast<const Tensor&>(&Tensor::operator-))
+        .def("__sub__", py::overload_cast<double>(&Tensor::operator-))
+
+        .def("__mul__", py::overload_cast<const Tensor&>(&Tensor::operator*))
+        .def("__mul__", py::overload_cast<const double>(&Tensor::operator*))
+        .def("__rmul__", [](Tensor& t, double v){return t*v; })
+
+        .def("__truediv__", py::overload_cast<const Tensor&>(&Tensor::operator/))
+        .def("__truediv__", py::overload_cast<double>(&Tensor::operator-))
+        
+        .def("__iadd__", py::overload_cast<const Tensor&>(&Tensor::operator+=))
+        .def("__iadd__", py::overload_cast<double>(&Tensor::operator+=))
+
+        .def("__isub__", py::overload_cast<const Tensor&>(&Tensor::operator-=))
+        .def("__isub__", py::overload_cast<double>(&Tensor::operator-=))
+        .def("__eq__",   py::overload_cast<const Tensor&>(&Tensor::operator==))
+        .def("__gt__",   py::overload_cast<const Tensor&>(&Tensor::operator>))
+        .def("__lt__",   py::overload_cast<const Tensor&>(&Tensor::operator<))
+        .def("__ne__",   py::overload_cast<const Tensor&>(&Tensor::operator!=))
+
+        //mathematical functions
+        .def("sum", &Tensor::sum, py::arg("axis"))
+        .def("mean", &Tensor::mean, py::arg("axis"))
+        .def("maximum", &Tensor::maximum, py::arg("axis"))
+        .def("minimum", &Tensor::minimum, py::arg("axis"))
+
+        .def("sqrt", &Tensor::sqrt)
+        .def("log", &Tensor::log)
+        .def("exp", &Tensor::exp)
+        .def("pow", &Tensor::pow, py::arg("n"))
+
+        .def("softmax", &Tensor::softmax, py::arg("axis"))
+        .def("log_softmax", &Tensor::log_softmax, py::arg("axis"))
+        .def("layer_norm", &Tensor::layer_norm, 
+                py::arg("gamma"), py::arg("beta"), py::arg("axis"))
+        .def("relu", &Tensor::relu)
+        .def("gelu", &Tensor::gelu)
+        .def("sigmoid", &Tensor::sigmoid)
+        .def("tanh", &Tensor::tanh)
+        .def("elu", &Tensor::elu, py::arg("alpha"))
+
+        //initializers
+        .def("xavier_ud", &Tensor::xavier_ud, py::arg("fan_in"), py::arg("fan_out"))
+        .def("dropout", &Tensor::dropout, 
+                py::arg("p"), py::arg("training"), py::arg("mask"));
 }
 
