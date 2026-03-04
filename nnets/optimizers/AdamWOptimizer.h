@@ -37,29 +37,21 @@ class AdamW : public Optimizer {
             time_step++;
             for(size_t i=0; i<parameters.size(); i++){
                 std::shared_ptr<TensorX>& parameter = parameters[i];
-                std::cout<<parameter->get_required_grad()<<std::endl;
                 if(!parameter->get_required_grad()) continue;
                 Tensor& param = parameter->get_data();
                 Tensor gradient = parameter->get_grad();
                 Tensor& m = momentum[i];
                 Tensor& v = velocity[i];
                 
-                std::cout<<"COB"<<std::endl;
-                prntd(param.as_vector_const());
-                prntd(m.as_vector_const());
-                prntd(gradient.as_vector_const());
                 m = m*beta1 + gradient*(1-beta1);
-                std::cout<<"MOB"<<std::endl;
                 v = v*beta2 + (gradient * gradient) * (1-beta2);
                 
-                std::cout<<"FOB"<<std::endl;
                 double m_bias_correction = (1-std::pow(beta1,time_step));
                 double v_bias_correction = (1-std::pow(beta2,time_step));
                 
                 Tensor mt_hat = m / m_bias_correction;
                 Tensor vt_hat = v / v_bias_correction;
                 
-                std::cout<<"BOB"<<std::endl;
                 //Regularization
                 param -= (param * lambda);
 

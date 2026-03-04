@@ -20,7 +20,7 @@ class Linear : public RootLayer {
             bias = tensor::deep_create({1, out_features}, true);
             weights = tensor::deep_create({in_features, out_feat});
             if(initialize){
-                weights->get_data().xavier_ud(in_features, out_feat);
+               weights->get_data().xavier_ud(-0.5, 0.5);
             }
         }    
 

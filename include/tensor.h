@@ -179,7 +179,7 @@ class Tensor {
         Tensor elu(const double alpha);
         
         //Initializers
-        void xavier_ud(const size_t fan_in, const size_t fan_out);
+        void xavier_ud(const double fan_in, const double fan_out);
         Tensor dropout(const double p, const bool training, Tensor& mask);
         //Extra
         void make2d(std::vector<size_t>& shape_list, const size_t axis = 1);

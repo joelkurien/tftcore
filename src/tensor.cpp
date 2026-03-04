@@ -826,8 +826,8 @@ Tensor Tensor::elu(const double alpha){
     return Tensor(res, shapes);
 }
 
-void Tensor::xavier_ud(const size_t fan_in, const size_t fan_out){
-    double limit = std::sqrt(6.0 / (double)(fan_in + fan_out));
+void Tensor::xavier_ud(const double fan_in, const double fan_out){
+    double limit = std::sqrt(6.0 / (fan_in + fan_out));
 
     std::random_device rd;
     std::mt19937 gen(rd());

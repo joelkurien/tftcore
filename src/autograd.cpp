@@ -87,7 +87,7 @@ void TensorX::backward(const std::optional<Tensor>& grad) {
 
     for(auto& tensor: topological_order){
         if(tensor->autograd_function){
-            std::cout<<tensor->autograd_function->op_name<<std::endl;
+            // std::cout<<tensor->autograd_function->op_name<<std::endl;
             tensor->autograd_function->backward_function();
         }
     }
@@ -599,7 +599,9 @@ std::shared_ptr<TensorX> matmul(std::shared_ptr<TensorX> x, std::shared_ptr<Tens
         Tensor grad_z = z->get_grad();
         Tensor x_grad = MatrixMul::matmul(grad_z, y->get_data().transpose());
         Tensor y_grad = MatrixMul::matmul(x->get_data().transpose(), grad_z);
-        
+       
+        x_grad = broadcasts::grad_reshape(x_grad, x->get_grad().shape());
+        y_grad = broadcasts::grad_reshape(y_grad, y->get_grad().shape());
         x->accumulate(x_grad);
         y->accumulate(y_grad);
     };
