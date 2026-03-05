@@ -473,24 +473,29 @@ Tensor Tensor::operator/ (const Tensor& t){
 Tensor Tensor::operator+= (const Tensor& t){
     if(this->shape() != t.shape()) throw std::invalid_argument("Inplace addition matrix shapes incompatible");
 
-    size_t total_size = this->size();
-
-    #pragma omp parallel for simd schedule(static)
-    for(size_t i=0; i<size(); i++){
-        std::vector<size_t> idx = this->index(i);
-        this->basePtr[this->jumpTo(idx)] += t.at(idx);
+    if(is_contiguous() && t.is_contiguous()){
+        size_t n = size();
+        double* ptr = basePtr;
+        const double* t_ptr = t.data();
+        
+        #pragma omp parallel for simd simdlen(4) schedule(static)
+        for(size_t i=0; i<n; i++){
+            ptr[i] += t_ptr[i];
+        }
+        return *this;
     }
-    
+
+    *this = *this+t;
     return *this;
 }
 
 Tensor Tensor::operator+= (const double val){
     size_t total_size = this->size();
+    double* ptr = basePtr;
 
-    #pragma omp parallel for simd schedule(static)
-    for(size_t i=0; i<size(); i++){
-        std::vector<size_t> idx = this->index(i);
-        this->basePtr[this->jumpTo(idx)] += val;
+    #pragma omp parallel for simd simdlen(4) schedule(static)
+    for(size_t i=0; i<total_size; i++){
+        ptr[i] += val;
     }
     
     return *this;
@@ -499,24 +504,28 @@ Tensor Tensor::operator+= (const double val){
 Tensor Tensor::operator-= (const Tensor& t){
     if(this->shape() != t.shape()) throw std::invalid_argument("Inplace subtraction matrix shapes incompatible");
 
-    size_t total_size = this->size();
-
-    #pragma omp parallel for simd schedule(static)
-    for(size_t i=0; i<size(); i++){
-        std::vector<size_t> idx = this->index(i);
-        this->basePtr[this->jumpTo(idx)] -= t.at(idx);
+    if(is_contiguous() && t.is_contiguous()){
+        size_t n = size();
+        double* ptr = basePtr;
+        const double* t_ptr = t.data();
+        
+        #pragma omp parallel for simd simdlen(4) schedule(static)
+        for(size_t i=0; i<n; i++){
+            ptr[i] -= t_ptr[i];
+        }
+        return *this;
     }
-    
-    return *this;
-}
+
+    *this = *this-t;
+    return *this;}
 
 Tensor Tensor::operator-= (const double val){
     size_t total_size = this->size();
+    double* ptr = basePtr;
 
-    #pragma omp parallel for simd schedule(static)
-    for(size_t i=0; i<size(); i++){
-        std::vector<size_t> idx = this->index(i);
-        this->basePtr[this->jumpTo(idx)] -= val;
+    #pragma omp parallel for simd simdlen(4) schedule(static)
+    for(size_t i=0; i<total_size; i++){
+        ptr[i] -= val;
     }
     
     return *this;
