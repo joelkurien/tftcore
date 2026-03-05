@@ -1,108 +1,564 @@
-# Financial ARLM: Transformer From Scratch + Backtesting Engine
+# peped - C++ based Tensor, Autograd and Modern ML Library
 
-This project implements a transformer architecture entirely from scratch and uses it to build an Autonomous Research Language Model (ARLM) capable of summarizing financial documents and extracting key signals for downstream trading strategies. A custom backtesting engine is being developed alongside the ARLM for strategy evaluation.
 
-## Tensor Library (C++)
-
-**Day 1 — Build & Linear Algebra Setup**  
-Created the C++ executable framework with CMake. Integrated the Eigen library to support matrix operations and high-performance linear algebra routines.
-
-**Day 2 — Initial Tensor System (2D)**  
-Implemented a basic tensor class focused on 2D operations. Added shape handling, update functions, and stride-based memory views to support efficient in-place matrix updates.
-
-**Day 3 — Batched 3D Tensors**  
-Extended the tensor class to 3D for batch processing (essential for transformer workloads). Added batch slicing, deep/shallow views, and batched update operations.
-
-**Day 4 — Unified General Tensor Class**  
-Merged the 2D and 3D structures into a single N-dimensional tensor using a raw pointer + stride arithmetic for data access. Added flexible slicing, reshaping, and optimized stride computation for contiguous and non-contiguous views.
-
-**Day 5 — Broadcasting Support**  
-Implemented complete broadcasting rules: shape inference, leading/trailing singleton handling, stride rewriting, and unsqueeze/expand mechanics. Added scaffolding for element-wise arithmetic using stride-based iteration.
-
-**Day 6 — Transformer Arithematic Support**  
-Implemented arithematic methods that a transformer needs: Matrix addition, linear matrix multiplication, scalar matrix multiplication, scalar matrix division, scalar matrix subtraction.
-
-**Day 7 — Refactoring and Reductions**  
-Refactored the element-wise addition, subtraction, division and multiplication, also implemented the reduction across single axes logic - will apply it for sum, mean, min and min later. Also generalized broadcasting for each operation. Also added parallelization to computation intensive operations
-
-**Day 8 - Reductions and functional operations**    
-Implemented the sum, mean and maximum finding along an axis, also completed the implementation of softmax along an axis and layernormalization along an axis with a parameterized gamma and beta values that can be passed and a fixed error variance value.
-
-**Day 9 - Matrix multiplication and broadcasting rules**    
-Implemented matrix multiplication using BLAS library because it was too complex and time consuming. I had to refer multiple sources on how to handle concurrency and control GPU/CPU performance so that I dont burn out my CPU, but failed miserably so I just resorted to using BLAS because I am lazy af.
-
-**Day 10 - Broadcasting rules** 
-Completed all required broadcasting rules that are necessary to build a transformer/basic feedforward network. Further implemented the Relu and Gelu functions as well. We have completed all the necessary functions required by a tensor library to build transformers and neural networks. Fucking hell!!!! I fucking hate C++ but have to do it if I want to get a good career somewhere. 
-
-## Autograd Library (C++)
-
-**Day 1- Computational graph**  
-Why the fuck did I take up this mountanous task, creating the computational graph itself is hell, if Jane Street or some other fucking company does not hire me, I will fucking burn someone's house down. Fucking cunt ass job market. Anyways, created the computational graph, had to learn topological graphs, shared pointers, smart pointers and memory management for the same. I had to refer to code from other sources since I could not understand what was going on in this shit, and it took about 4hrs to write like 20-30 lines of code. I just want to die OMG.
-
-**Day 2- Elementwise operations gradients** 
-Cleaned up my code and separated my .h and .cpp files. Created autograd operations for elementwise arithematic operations
-
-**Day 3- Softmax gradients and debugging**
-Today was intended to implement the gradients for all the reduction operations but it was cut short due to the issue of debugging and resolving issues that was caused due to the unsqueeze() function. The cause of issue - when unsqueeze was called on a temporary object that was bound to be destroyed once called (sum(axis) that returns a tensor) the base pointer of the unsqueeze will then be pointing to jackshit => dangling pointer, due to this issue not being found I wasted about 3 hrs, learning about dangling pointers and started to get annoyed, so I just made the unsqueeze to create a brand new tensor instead of the originally intended shallow copy. I had taken assistance from AI sources to understand how to resolve it and they had recommended using shared_ptr, but as I am unaware of how to use shared_ptr, we will have to overhaul and remodel the tensor library in a later date to incorporate shared_ptr and unique_ptr for dereferencing safety. For now, we have completed the implementation of softmax gradients, tmrw will look forward to completing the other reductions and may be, just may be do matrix multiplication as well - if it poses to be hell I will be using libraries.
-
-**Day 4- Reduction operation and matrix multiplication gradients**  
-Implemented the backward functions for mean, sum along an axis, relu and gelu functions, matrix multiplication, tranpose and permute operations. Learned more about dereferencing and viewing an instance from another one.
-
-**Day 5- Simple Matrix operations autograd**
-Implemented the autograd for reshaping and concatenating a matrices, elementwise operations such as sqrt, log, exp and pow operations as well. Tomorrow my plan is to complete the small set of autograd left -> permute matrices, layer normalization, MSE Loss and cross entropy loss and then we will create our very own neural layers!!!! Very exciting.
-
-**Day 6- Layer Norm and permutation operation autograd**   
-Added autograd for Layer normalization but there are some issues in backward propogration for this method, so I will need to look into it. Also completed the implementation of permutation of matrices autograd. Tomorrow completion with MSE Loss and cross entropy.
-
-**Day 7 - Fixed Layer Norm**
-Fixed the backpropagation of layer normalization, the issue was that the gradient of the result will of shape nxm - but the operands that achieved the result might be of shape nxm and 1xm, so the gradients for the two operands should be different, but initially we were considering the shapes of the two operands as the same which was causing repeated addition. To resolve this we created a unbroadcasting function that converts the gradient back to the operand shape (1xm) so that there is no repeated operation being performed. This took a large chunk of my time, may be later(tmrw/day after) I may complete the loss functions - I will largely focus on cross entropy as creating a language based transformer we are more focused on alphabet classification over regressive analysis. Maybe later we may implement MSE and MAD as well.
-
-**Day I dont know**
-I got fed up with the errors and gave up, now back at it, tried to fix most of it and officially I would like to announce ***I, a fucking programming noob*** have successfully implemented generic pytorch from scratch in C++, wooooooooooooooooooo.
-
-**Day I dont know + 2**
-I fixed further issues and added some mini test-cases lazy to update it, will update it later
-
-## Neural Networks (C++)
-
-**Day 1**
-Created my first neural layers in C++ - Linear Layer, and some activation layers like Relu, GLU, ELU, Tanh, Sigmoid. This is very cool, after implementation of all the neural networks, my wish is to port it to python and develop a small application in python for using the model.
-
-**Day 2**  
-Created the Gated Residual Network and it works wahoo. I have created my first proper deep learning neural network without the help of AI, all me and it was fucking hard, I hate C++ from my very core, it is extremely hard, I don't understand vtables, referencing seg and core faults. Someone save me from this hellhole.
-
-**Day 3**  
-I forgot to write my updates yesterday, so I am writing all my updates today, I decided today to be a simple bug fixing session on my GRN network. Fixed bug issues related to vtables (Had to properly define virtual functions in my NN layers). Fixed segmentation faults in my model (I don't know what fixed it but it magically got fixed), and now I have a working GRN network to do jack shit.  Next, I will try to work in the Variable Selection Network in fucking C++. ;(
-
-**Day 4**  
-Create the Variable Selection Network, the network works fine at least mathematically for 3D tensors but for some reasons does not work for 2D tensors due to some shape handling issue. Need to look into that. Overall couple more layers left and we will port the c++ librarires to python to build a useable application for my library.
-
-**Day 5**  
-Fixed Calculation and parameter exposition in VSN and fixed static encoder. There are still issue like vanishing and exploding values that needs fixing, will see if the issues fixes itself once I implement the optimizers and if convergences will handle it or not. Otherwise, I will spend another eternity in fixing that issue.
-
-**Day 6**  
-Created and pushed LSTM Layer, i haven't tested it, will test it later to see the hellhole that I have created, why the fuck did i decide the build the entire thing from scratch, if at the end this shit does not work - I am breaking my PC and killing my university, FUCK my life mannnnnn.
-
-**Day 7**  
-Created masked interpretable Multi-head attention layer, this this I have completed all feed-forward layers required to build my Temporal fusion transformer architecture. This itself is a big milestone in my computer science career, I never thought I would be able to reach this point in the project without dropping it, I know noone else will care or appreciate this, but I am extremely proud of myself. The next step is to build the optimizer and test a single raw cycle, after that we will port this to python as a library.  
-- Next in the agenda is to create the TFT architecture proper in python
-- Convert the model into an API
-- Create a small scale website, where users can export files to my app and maybe within 15-20 mins get a result of the different features that are affecting their results.
-
-I don't know if I will be able to do all that but it will be very cool. I don't think I might get a job with this application, since I am doing too much for nothing, but it is my small project for all I care.
-
-## Backtesting Engine
-
-Designed and implemented the foundation of a custom backtesting engine intended for seamless integration with the ARLM, enabling direct evaluation of strategy outputs generated from financial text analysis.
+A C++ tensor and automatic differentiation library with a Python interface via pybind11. Built from scratch with no noob-ass tech like — PyTorch ,TensorFlow, straigh up masochism for the boys back at home. Implements stride-based N-dimensional tensors, reverse-mode autograd with topological sort, BLAS-accelerated matrix multiplication, and OpenMP parallelism, Neural network model development and optimizations.
 
 
 
+---
 
 
 
+## Features
 
 
 
+- **Stride-based tensors** — zero-copy views, transpose, permute, slice, and broadcast via stride manipulation. Non-contiguous memory layouts are fully supported.
+
+- **Reverse-mode autograd** — computation graph built dynamically during the forward pass, gradients computed via topological sort on the backward pass.
+
+- **BLAS integration** — matrix multiplication dispatches to `cblas_dgemm` for single, batched, and broadcast cases.
+
+- **OpenMP parallelism** — elementwise operations and activations parallelised across CPU cores with `simd` vectorisation hints.
+
+- **Zero-copy numpy interop** — tensors expose the Python buffer protocol, so `np.array(tensor)` and `Tensor.from_numpy(arr)` share memory without copying.
+
+- **Full neural network layer support** — LSTM, Multi-Head Attention, GRN, and Temporal Fusion Transformer implemented on top of the library.
 
 
 
+---
+
+
+
+## Requirements
+
+
+
+- C++20
+
+- CMake >= 3.15
+
+- OpenBLAS or any CBLAS-compatible library
+
+- OpenMP
+
+- Python >= 3.10
+
+- pybind11
+
+
+
+On Ubuntu/Debian:
+
+```bash
+
+sudo apt install libopenblas-dev liblapack-dev libomp-dev
+
+conda install -c conda-forge pybind11
+
+```
+
+
+
+---
+
+
+
+## Build
+
+
+
+```bash
+
+git clone https://github.com/joelkurien/tftcore
+
+cd tftcore
+
+
+
+mkdir build && cd build
+
+cmake .. -DCMAKE_BUILD_TYPE=Release
+
+make -j$(nproc)
+
+```
+
+
+
+This produces `peped.cpython-3XX-x86_64-linux-gnu.so` in the `build/` directory.
+
+
+
+To run Python from the build directory:
+
+```bash
+
+cd build
+
+python3
+
+>>> import peped
+
+```
+
+
+
+To install system-wide into your conda environment:
+
+```bash
+
+pip install --no-build-isolation -e .
+
+```
+
+
+
+---
+
+
+
+## Module structure
+
+
+
+```
+
+peped
+
+├── peped.tensor          # Raw tensor ops, no gradient tracking
+
+│   └── Tensor            # Core tensor class
+
+└── peped.autograd        # Gradient-tracked ops
+
+│   └── TensorX           # Autograd node wrapping Tensor
+
+└── peped.ease_tensor     # Factory helpers for TensorX creation
+
+```
+
+
+
+---
+
+
+
+## Quick start
+
+
+
+### Tensor (no autograd)
+
+
+
+```python
+
+import peped
+
+import numpy as np
+
+
+
+# Construction
+
+t = peped.tensor.Tensor([3, 4])          # zero tensor, shape [3, 4]
+
+t = peped.tensor.Tensor([1.0, 2.0, 3.0, 4.0], [2, 2])   # from data
+
+t = peped.tensor.Tensor.from_numpy(np.random.randn(3, 4)) # from numpy
+
+
+
+# numpy interop — zero copy
+
+arr = t.to_ndarray()   # returns np.array sharing memory with t
+
+arr = np.array(t)      # same via buffer protocol
+
+
+
+# Shape ops — zero copy views
+
+t.reshape([4, 3])
+
+t.transpose()                    # swap last two axes
+
+t.transpose(0, 2)                # swap axes 0 and 2
+
+t.permute([2, 0, 1])
+
+t.unsqueeze(0)                   # insert dim at axis 0
+
+t.squeeze()                      # remove all size-1 dims
+
+t.expand([6, 4])                 # broadcast to target shape
+
+t.slice([0, 0], [2, 2])          # view of first 2x2 block
+
+t.chunk(4, axis=1)               # split into 4 chunks along axis 1
+
+
+
+# Indexing
+
+val = t.at([1, 2])               # read element
+
+t.put([1, 2], 99.0)              # write element
+
+
+
+# Arithmetic
+
+a + b    # elementwise add
+
+a - b    # elementwise subtract
+
+a * b    # elementwise multiply
+
+a / b    # elementwise divide
+
+a + 2.0  # scalar broadcast
+
+2.0 * a  # scalar broadcast
+
+
+
+# Reductions
+
+t.sum(axis=1)
+
+t.mean(axis=0)
+
+t.maximum(axis=1)
+
+t.minimum(axis=0)
+
+
+
+# Math
+
+t.sqrt()
+
+t.log()
+
+t.exp()
+
+t.pow(2.0)
+
+
+
+# Activations
+
+t.relu()
+
+t.gelu()
+
+t.sigmoid()
+
+t.tanh()
+
+t.elu(alpha=1.0)
+
+t.softmax(axis=1)
+
+t.log_softmax(axis=1)
+
+t.layer_norm(gamma, beta, axis=1)
+
+
+
+# Initialisation
+
+w = peped.tensor.Tensor([512, 256])
+
+w.xavier_ud(fan_in=512, fan_out=256)
+
+
+
+# Dropout — returns (result, mask) tuple
+
+result, mask = t.dropout(p=0.1, training=True)
+
+
+
+# Free functions
+
+peped.tensor.matmul(a, b)
+
+peped.tensor.concatenate([a, b, c], axis=0)
+
+peped.tensor.ones([3, 3])
+
+peped.tensor.dot(x, y, axis=1)
+
+peped.tensor.elemental_max(a, b)
+
+```
+
+
+
+---
+
+
+
+### TensorX (with autograd)
+
+
+
+```python
+
+import peped
+
+import numpy as np
+
+
+
+ag = peped.autograd
+
+
+
+# Create autograd tensors
+
+data = peped.tensor.Tensor.from_numpy(np.random.randn(4, 8))
+
+x = ag.TensorX(data, requires_grad=True)
+
+
+
+# Or use factory helpers
+
+x = peped.ease_tensor.deep_create([4, 8], requires_grad=True)
+
+x = peped.ease_tensor.deep_create([1.0, 2.0, 3.0, 4.0], [2, 2], requires_grad=True)
+
+
+
+# Forward pass — builds computation graph automatically
+
+y    = ag.relu(x)
+
+z    = ag.matmul(y, ag.TensorX(peped.tensor.ones([8, 4]), requires_grad=False))
+
+loss = ag.mean(z, axis=1)
+
+loss = ag.mean(loss, axis=0)
+
+
+
+# Backward pass
+
+loss.backward()
+
+
+
+# Access gradients
+
+grad = x.nd_grad()          # returns np.array
+
+print(grad.shape)            # (4, 8)
+
+
+
+# Zero gradients before next step
+
+x.zero_grad()
+
+
+
+# Inspect data
+
+print(x.shape())             # [4, 8]
+
+print(x.size())              # 32
+
+print(x)                     # TensorX(shape=(4, 8), requires_grad=True)
+
+
+
+# All autograd ops
+
+ag.add(x, y)                 # x + y
+
+ag.add(x, 2.0)               # x + scalar
+
+ag.subtract(x, y)
+
+ag.multiply(x, y)
+
+ag.divide(x, y)
+
+ag.sqrt(x)
+
+ag.log(x)
+
+ag.exp(x)
+
+ag.pow(x, 2.0)
+
+ag.sum(x, axis=1)
+
+ag.mean(x, axis=0)
+
+ag.var(x, axis=1)
+
+ag.maximum(x, axis=0)
+
+ag.minimum(x, axis=1)
+
+ag.relu(x)
+
+ag.gelu(x)
+
+ag.sigmoid(x)
+
+ag.tanh(x)
+
+ag.elu(x, alpha=1.0)
+
+ag.softmax(x, axis=1)
+
+ag.log_softmax(x, axis=1)
+
+ag.layer_norm(x, gamma, beta, axis=1)
+
+ag.glu(x, axis=1)
+
+ag.reGlu(x)
+
+ag.matmul(x, y)
+
+ag.transpose(x)
+
+ag.permute(x, axes=[1, 0])
+
+ag.reshape(x, [8, 4])
+
+ag.squeeze(x)
+
+ag.unsqueeze(x, axis=0)
+
+ag.expand(x, [8, 8])
+
+ag.chunk(x, num_chunks=4, axis=1)
+
+ag.concat([x, y], axis=0)
+
+ag.stack([x, y], axis=0)
+
+ag.slice(x, start=[0, 0], shape=[2, 4])
+
+ag.fill_mask(x, mask, replace=0.0)
+
+ag.pinball_loss(y_true, y_pred, tau=0.5)
+
+
+
+# Dropout — returns (TensorX result, Tensor mask)
+
+result, mask = ag.dropout(x, p=0.1, training=True)
+
+```
+
+
+
+---
+
+
+
+## Project structure
+
+
+
+```
+
+tftcore/
+
+├── bindings.cpp          # pybind11 module definition
+
+├── CMakeLists.txt        # build configuration
+
+├── pyproject.toml        # Python packaging
+
+├── src/
+
+│   ├── tensor.cpp        # Tensor implementation
+
+│   ├── autograd.cpp      # Autograd engine + all ops
+
+│   ├── MatrixMultiply.cpp# BLAS matmul dispatch
+
+│   └── nditerator.cpp    # N-dimensional index iterator
+
+├── include/
+
+│   ├── tensor.h
+
+│   ├── autograd.h
+
+│   ├── MatrixMultiply.h
+
+│   ├── tensor_fac.h
+
+│   └── nditerator.h
+
+├── nnets/
+
+│   ├── networks/         # LSTM, Multi-Head Attention, TFT
+
+│   ├── optimizers/       # AdamW
+
+│   └── LRSchedulers/     # Cosine annealing
+
+└── test_files/
+
+    └── autograd_test.cpp
+
+```
+
+
+
+---
+
+
+
+## Running tests
+
+
+
+```bash
+
+cd build
+
+cmake .. -DBUILD_TESTS=ON
+
+make -j$(nproc)
+
+ctest --output-on-failure
+
+```
+
+
+
+---
+
+
+
+## Design notes
+
+
+
+**Why stride-based views?** Transpose, permute, and slice return views into the same memory by manipulating strides rather than copying data. This matches numpy's internal design and avoids unnecessary allocation during forward passes.
+
+
+
+**Why reverse-mode autograd?** For neural networks where the number of outputs (loss = scalar) is much smaller than the number of inputs (parameters), reverse-mode is O(1) backward passes vs O(n) for forward-mode. Each op registers a backward closure during the forward pass; `backward()` executes them in reverse topological order.
+
+
+
+**Why BLAS for matmul?** `cblas_dgemm` is highly optimised for the target architecture and uses cache-blocking and SIMD internally. Writing a competitive matmul from scratch is non-trivial; BLAS handles it correctly for all matrix layouts including transposed operands.
+
+
+
+**Why OpenMP + simd?** Elementwise ops like `relu`, `sigmoid`, and `gelu` are embarrassingly parallel. `#pragma omp parallel for simd simdlen(4)` distributes work across CPU cores while the `simd` clause hints to the compiler to use AVX2 SIMD lanes (4 doubles per register with `-mavx2`).
