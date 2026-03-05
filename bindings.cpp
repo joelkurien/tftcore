@@ -7,7 +7,6 @@
 #include "autograd.h"
 #include "MatrixMultiply.h"
 #include "tensor_fac.h"
-#include "nditerator.h"
 
 namespace py = pybind11;
 
@@ -43,8 +42,12 @@ Tensor from_numpy(py::array_t<double, py::array::c_style> arr){
     return Tensor(data, shape, strides);
 }
 
-PYBIND11_MODULE(peped, m) {
-    py::class_<Tensor>(m, "Tensor", py::buffer_protocol())
+PYBIND11_MODULE(peped, tensor) {
+    //Tensor module
+    py::module_ t = tensor.def_submodule("tensor",  
+            "Tensor module: vector operations without auto-differentiation");
+
+    py::class_<Tensor>(t, "Tensor", py::buffer_protocol())
         .def_buffer([](Tensor& t) -> py::buffer_info {
             return create_buffer_info(t);
         })
@@ -63,7 +66,7 @@ PYBIND11_MODULE(peped, m) {
 
         //Informative functions about the tensor
         .def("shape", &Tensor::shape)
-        .def("ndim", &Tensor::ndim)
+        .def("dim", &Tensor::ndim)
         .def("size", &Tensor::size)
         .def("empty", &Tensor::empty)
         .def("strides", &Tensor::get_strides)
@@ -151,21 +154,197 @@ PYBIND11_MODULE(peped, m) {
 
         //initializers
         .def("xavier_ud", &Tensor::xavier_ud, py::arg("fan_in"), py::arg("fan_out"))
-        .def("dropout", &Tensor::dropout, 
-                py::arg("p"), py::arg("training"), py::arg("mask"))
+        .def("dropout", [](Tensor& x, double p, bool training){
+            Tensor mask;
+            auto result = x.dropout(p, training, mask);
+            return py::make_tuple(result, mask);
+        }, py::arg("p"), py::arg("training"))
 
         .def("__repr__", [](const Tensor& t){
             return "Tensor(shape="+vec_string(t.shape()) + ")";
         });
-    m.def("matmul", &MatrixMul::matmul, py::arg("a"), py::arg("b"));
-    m.def("concatenate", &concatenate, py::arg("tensors"), py::arg("axis"));
-    m.def("ones", &ones, py::arg("shape"));
-    m.def("dot", &dot, py::arg("x"), py::arg("y"), py::arg("axis"));
-    m.def("elemental_max",
+    t.def("matmul", &MatrixMul::matmul, py::arg("a"), py::arg("b"));
+    t.def("concatenate", &concatenate, py::arg("tensors"), py::arg("axis"));
+    t.def("ones", &ones, py::arg("shape"));
+    t.def("dot", &dot, py::arg("x"), py::arg("y"), py::arg("axis"));
+    t.def("elemental_max",
             py::overload_cast<const Tensor&, const Tensor&>(&elemental_max),
             py::arg("a"), py::arg("b"));
-    m.def("replace",
+    t.def("replace",
             py::overload_cast<const Tensor&, const Tensor&, const Tensor&>(&replace),
             py::arg("mask"), py::arg("a"), py::arg("b"));
+
+    //Autograd Module
+    py::module_ ag = tensor.def_submodule("autograd", 
+            "TensorX: vector operations with auto differentiation and backward topological map creation.");
+    py::class_<TensorX, std::shared_ptr<TensorX>>(ag, "TensorX")
+        .def(py::init<Tensor, bool>(),
+            py::arg("data"), py::arg("requires_grad") = true)
+        
+        .def("data", &TensorX::get_data, py::return_value_policy::reference_internal)
+        .def("grad", &TensorX::get_grad, py::return_value_policy::reference_internal)
+        .def("requires_grad", &TensorX::get_required_grad)
+
+        .def("nd_data", [](TensorX& tx) -> py::array_t<double> {
+            return py::array_t<double>(create_buffer_info(tx.get_data()));
+        })
+        .def("nd_grad", [](TensorX& tx) -> py::array_t<double> {
+            return py::array_t<double>(create_buffer_info(tx.get_grad()));
+        })
+
+        .def("backward", [](TensorX& tx, py::object grad_base){
+            if(grad_base.is_none())
+                tx.backward(std::nullopt);
+            else
+                tx.backward(grad_base.cast<Tensor>());
+        }, 
+        py::arg("grad") = py::none())
+        .def("zero_grad", &TensorX::grad_zeros)
+        .def("accumulate", &TensorX::accumulate, py::arg("grad"))
+        .def("set_backward_fn", &TensorX::set_autograd_fn, py::arg("fn"))
+
+        .def("shape", [](TensorX& tx) { return tx.get_data().shape(); })
+        .def("gshape", [](TensorX& tx) { return tx.get_grad().shape(); })
+
+        .def("size", [](TensorX& tx) { return tx.get_data().size(); })
+        .def("size", [](TensorX& tx) { return tx.get_data().size(); })
+
+        .def("dim", [](TensorX& tx) { return tx.get_grad().ndim(); }) 
+        .def("gdim", [](TensorX& tx) { return tx.get_grad().ndim(); })
+
+        .def("__repr__", [](TensorX& tx) {
+            return "TensorX(shape="+vec_string(tx.get_data().shape()) + ", requires_grad=" 
+                    + (tx.get_required_grad() ? "True" : "False") + ")";
+        }); 
+
+        //arithematic operations
+        tensor.def("add", 
+                py::overload_cast<std::shared_ptr<TensorX>, std::shared_ptr<TensorX>>(&add)
+        );
+        tensor.def("add",
+                py::overload_cast<std::shared_ptr<TensorX>, double>(&add)
+        );
+        tensor.def("subtract",
+                 py::overload_cast<std::shared_ptr<TensorX>, std::shared_ptr<TensorX>>(&subtract)
+        );
+        tensor.def("subtract",
+                 py::overload_cast<std::shared_ptr<TensorX>, double>(&subtract)
+        );
+        tensor.def("multiply",
+                 py::overload_cast<std::shared_ptr<TensorX>, std::shared_ptr<TensorX>>(&multiply)
+        );
+        tensor.def("multiply",
+                 py::overload_cast<std::shared_ptr<TensorX>, double>(&multiply)
+        );
+        tensor.def("divide",
+                 py::overload_cast<std::shared_ptr<TensorX>, std::shared_ptr<TensorX>>(&divide)
+        );
+        tensor.def("divide",
+                 py::overload_cast<std::shared_ptr<TensorX>, double>(&divide)
+        );
+
+        //mathematical functions
+        ag.def("sqrt", 
+                static_cast<std::shared_ptr<TensorX>(*)(std::shared_ptr<TensorX>)>(&sqrt),
+                py::arg("x"));
+        ag.def("log", 
+                static_cast<std::shared_ptr<TensorX>(*)(std::shared_ptr<TensorX>)>(&log),
+                py::arg("x"));
+        ag.def("exp", 
+                static_cast<std::shared_ptr<TensorX>(*)(std::shared_ptr<TensorX>)>(&exp),
+                py::arg("x"));
+        ag.def("pow", 
+                static_cast<std::shared_ptr<TensorX>(*)(std::shared_ptr<TensorX>, const double)>(&pow),
+                py::arg("x"), py::arg("n"));
+
+        ag.def("sum", &sum, py::arg("x"), py::arg("axis"));
+        ag.def("mean", &mean, py::arg("x"), py::arg("axis"));
+        ag.def("var", &var, py::arg("x"), py::arg("axis"));
+        ag.def("maximum", 
+                py::overload_cast<std::shared_ptr<TensorX>, const size_t>(&maximum), 
+                py::arg("x"), 
+                py::arg("axis"));
+        ag.def("minimum", 
+                py::overload_cast<std::shared_ptr<TensorX>, const size_t>(&minimum), 
+                py::arg("x"), 
+                py::arg("axis"));
+        
+        ag.def("relu", &relu, py::arg("x"));
+        ag.def("gelu", &gelu, py::arg("x"));
+        ag.def("sigmoid", &sigmoid, py::arg("x"));
+        ag.def("tanh", 
+                static_cast<std::shared_ptr<TensorX>(*)(std::shared_ptr<TensorX>)>(&tanh),
+                py::arg("x"));
+        ag.def("elu", &elu, py::arg("x"), py::arg("alpha") = 1);
+        ag.def("softmax", &softmax, py::arg("x"), py::arg("axis"));
+        ag.def("log_softmax", &log_softmax, py::arg("x"), py::arg("axis"));
+        ag.def("glu", &glu, py::arg("x"), py::arg("axis"));
+        ag.def("reGlu", &reGlu, py::arg("x"));
+
+        ag.def("layer_norm", &layer_norm,
+                py::arg("x"), py::arg("gamma"), py::arg("beta"), py::arg("axis"));
+
+        ag.def("squeeze", &squeeze, py::arg("x"), py::arg("axis") = py::none());
+        ag.def("unsqueeze", &unsqueeze, py::arg("x"), py::arg("axis"));
+        ag.def("expand", &expand, py::arg("x"), py::arg("target_shape"));
+        ag.def("reshape", &reshape, py::arg("x"), py::arg("new_shape"));
+        ag.def("transpose", &transpose, 
+                py::arg("x"), 
+                py::arg("a1") = py::none(), 
+                py::arg("a2") = py::none());
+
+        ag.def("permute", &permute, py::arg("x"), py::arg("axes") = py::none());
+
+        ag.def("chunk", &chunk, py::arg("x"), py::arg("num_chunks"), py::arg("axis"));
+        ag.def("concat", &concat, py::arg("tensors"), py::arg("axis"));
+        ag.def("stack", [](std::vector<std::shared_ptr<TensorX>> tensors, size_t axis){
+            return stack(tensors, axis);
+        }, py::arg("tensors"), py::arg("axis"));
+
+        ag.def("slice", &slice, 
+                py::arg("x"), 
+                py::arg("start"), 
+                py::arg("shape"), 
+                py::arg("strides") = py::none());
+
+        ag.def("fill_mask", &masked_fill, 
+                py::arg("x"), 
+                py::arg("mask"), 
+                py::arg("replace"));
+
+        ag.def("replace", py::overload_cast<const Tensor&,
+                                                std::shared_ptr<TensorX>,
+                                                std::shared_ptr<TensorX>>(&replace), 
+                py::arg("mask"), 
+                py::arg("x"), 
+                py::arg("y"));
+        ag.def("max_element", py::overload_cast<std::shared_ptr<TensorX>, 
+                std::shared_ptr<TensorX>>(&elemental_max), py::arg("x"), py::arg("y"));
+
+        ag.def("dropout", [](std::shared_ptr<TensorX> x, double p, bool training){
+            Tensor mask;
+            auto result = dropout(x, p, training, mask);
+            return py::make_tuple(result, mask);
+        }, py::arg("x"), py::arg("p"), py::arg("training"));
+
+        ag.def("pinball_loss", &pinball_loss, py::arg("y"), py::arg("y_pred"), py::arg("tau"));
+        ag.def("matmul", py::overload_cast<std::shared_ptr<TensorX>, 
+                std::shared_ptr<TensorX>>(&matmul), py::arg("x"), py::arg("y"));
+
+        //simpler tensor creation for autograd
+        py::module_ fac = tensor.def_submodule("ease_tensor", "Factory helpers to create autograd tensors");
+
+        fac.def("create", &tensor::create, 
+                py::arg("data"), 
+                py::arg("required_grad") = true);
+        
+        fac.def("deep_create", 
+                py::overload_cast<std::vector<size_t>, bool>(&tensor::deep_create),
+                py::arg("shape"), py::arg("requires_grad") = true);
+        
+        fac.def("deep_create",
+                py::overload_cast<std::vector<double>, std::vector<size_t>, bool>(&tensor::deep_create),
+                py::arg("data"), py::arg("shape"), py::arg("requires_grad") = true);
+
 }
 
