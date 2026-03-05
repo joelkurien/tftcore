@@ -1,4 +1,4 @@
-# peped - C++ based Tensor, Autograd and Modern ML Library
+# peped - Tensor, Autograd and Modern ML Library
 
 
 A C++ tensor and automatic differentiation library with a Python interface via pybind11. Built from scratch with no noob-ass tech like — PyTorch ,TensorFlow, straigh up masochism for the boys back at home. Implements stride-based N-dimensional tensors, reverse-mode autograd with topological sort, BLAS-accelerated matrix multiplication, and OpenMP parallelism, Neural network model development and optimizations.
